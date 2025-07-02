@@ -194,7 +194,7 @@
           <td>${v.placa || ''}</td>
           <td>${v.portaria || ''}</td>
           <td>${v.entrada || ''}</td>
-          <td><button class="btn btn-sm btn-danger" onclick="remover(${visitantes.indexOf(v)})">Dar Saída</button></td>
+          <td><button class="btn btn-sm btn-danger" onclick="confirmarSaida(${visitantes.indexOf(v)})">Dar Saída</button></td>
         `;
         tabela.appendChild(tr);
       });
@@ -205,10 +205,13 @@
       btnNext.disabled = pagina === totalPaginas;
     }
 
-    function remover(i) {
-      visitantes[i].saida = new Date().toISOString();
-      localStorage.setItem('visitantes', JSON.stringify(visitantes));
-      renderizarTabela();
+    function confirmarSaida(i) {
+      const modelo = visitantes[i].modelo || 'veículo';
+      if (confirm(`Tem certeza que quer dar saída no '${modelo}'?`)) {
+        visitantes[i].saida = new Date().toISOString();
+        localStorage.setItem('visitantes', JSON.stringify(visitantes));
+        renderizarTabela();
+      }
     }
 
     function gerarRelatorio() {
@@ -227,6 +230,11 @@
           contagem30Dias[placa] = (contagem30Dias[placa] || 0) + 1;
         }
       });
+
+      if (Object.keys(contagemTotal).length === 0) {
+        relatorio.textContent = 'Nenhuma entrada registrada.';
+        return;
+      }
 
       const linhas = Object.keys(contagemTotal).map(placa => {
         const total = contagemTotal[placa];
