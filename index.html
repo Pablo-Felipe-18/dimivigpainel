@@ -165,7 +165,7 @@
         acc[input.id] = input.value.toUpperCase();
         return acc;
       }, {});
-      dados.entrada = new Date().toLocaleString();
+      dados.entrada = new Date().toISOString();
       visitantes.push(dados);
       localStorage.setItem('visitantes', JSON.stringify(visitantes));
       form.reset();
@@ -222,7 +222,7 @@
 
         contagemTotal[placa] = (contagemTotal[placa] || 0) + 1;
 
-        if (dataEntrada >= trintaDiasAtras) {
+        if (!isNaN(dataEntrada.getTime()) && dataEntrada >= trintaDiasAtras) {
           contagem30Dias[placa] = (contagem30Dias[placa] || 0) + 1;
         }
       });
