@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DIMIVIG</title>
-  <link rel="icon" type="image/png" href="DIMIVIGLOGO.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
@@ -55,11 +55,28 @@
       padding: 15px;
       border-radius: 8px;
     }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      margin-top: 10px;
+    }
+    .pagination button {
+      background-color: orange;
+      color: black;
+      border: none;
+      margin: 0 5px;
+      padding: 5px 10px;
+      border-radius: 4px;
+    }
+    .pagination span {
+      margin: 0 10px;
+      align-self: center;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <img src="DIMIVIGLOGO.png" alt="Logo Dimivig" class="logo">
+    <img src="logo.png" alt="Logo Dimivig" class="logo">
     <h3 class="text-center mb-4 text-orange">DIMIVIG</h3>
     <div class="row">
       <div class="col-12 col-md-6">
@@ -70,23 +87,22 @@
               <select class="form-select" id="portaria" required>
                 <option selected disabled>Selecione a Portaria</option>
                 <option value="A">Portaria A</option>
-                <option value="B">Portaria C</option>
-                <option value="C">Portaria D</option>
+                <option value="B">Portaria B</option>
+                <option value="C">Portaria C</option>
               </select>
             </div>
-            <input class="form-control mb-2" placeholder="Nome Do Visitante" required>
-            <input class="form-control mb-2" placeholder="Empresa" required>
-            <input class="form-control mb-2" placeholder="Setor De Destino" required>
-            <input class="form-control mb-2" placeholder="Autorizado Por?" required>
-            <input class="form-control mb-2" placeholder="Matrícula Do Vigilante" required>
-            <input class="form-control mb-2" placeholder="Telefone" required>
-            <input class="form-control mb-2" placeholder="Placa Do Veiculo" required>
-            <input class="form-control mb-3" placeholder="Modelo Do Veiculo">
+            <input class="form-control mb-2" placeholder="Nome *" required>
+            <input class="form-control mb-2" placeholder="Empresa *" required>
+            <input class="form-control mb-2" placeholder="Setor de Destino *" required>
+            <input class="form-control mb-2" placeholder="Autorizado por? *" required>
+            <input class="form-control mb-2" placeholder="Matrícula Vigilante *" required>
+            <input class="form-control mb-2" placeholder="Telefone *" required>
+            <input class="form-control mb-2" placeholder="Placa *" required>
+            <input class="form-control mb-3" placeholder="Veículo Modelo">
             <button type="submit" class="btn btn-primary w-100">Salvar</button>
           </form>
         </div>
       </div>
-
       <div class="col-12 col-md-6">
         <div class="table-section">
           <div class="mb-3">
@@ -96,8 +112,8 @@
             <select class="form-select" id="filtroPortaria">
               <option value="">Filtrar por Portaria</option>
               <option value="A">Portaria A</option>
-              <option value="B">Portaria C</option>
-              <option value="C">Portaria D</option>
+              <option value="B">Portaria B</option>
+              <option value="C">Portaria C</option>
             </select>
           </div>
           <div class="table-responsive">
@@ -111,10 +127,13 @@
                   <th>Ações</th>
                 </tr>
               </thead>
-              <tbody id="tabelaVisitantes">
-                <!-- Visitantes vão aparecer aqui -->
-              </tbody>
+              <tbody id="tabelaVisitantes"></tbody>
             </table>
+          </div>
+          <div class="pagination">
+            <button id="prevPage">&laquo;</button>
+            <span id="paginaAtual">Página 1</span>
+            <button id="nextPage">&raquo;</button>
           </div>
         </div>
       </div>
@@ -126,8 +145,13 @@
     const tabela = document.getElementById('tabelaVisitantes');
     const filtroNome = document.getElementById('filtroNome');
     const filtroPortaria = document.getElementById('filtroPortaria');
+    const paginaAtualSpan = document.getElementById('paginaAtual');
+    const btnPrev = document.getElementById('prevPage');
+    const btnNext = document.getElementById('nextPage');
 
-    const visitantes = [];
+    let visitantes = [];
+    let pagina = 1;
+    const porPagina = 10;
 
     form.addEventListener('submit', e => {
       e.preventDefault();
@@ -138,6 +162,7 @@
       dados.entrada = new Date().toLocaleString();
       visitantes.push(dados);
       form.reset();
+      pagina = Math.ceil(visitantes.length / porPagina);
       renderizarTabela();
     });
 
@@ -145,22 +170,30 @@
       tabela.innerHTML = '';
       const texto = filtroNome.value.toLowerCase();
       const portaria = filtroPortaria.value;
-      visitantes
-        .filter(v =>
-          (!texto || v['Nome *']?.toLowerCase().includes(texto)) &&
-          (!portaria || v.portaria === portaria)
-        )
-        .forEach((v, i) => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${v['Nome *']}</td>
-            <td>${v['Placa *']}</td>
-            <td>${v.portaria}</td>
-            <td>${v.entrada}</td>
-            <td><button class="btn btn-sm btn-danger" onclick="remover(${i})">Dar Saída</button></td>
-          `;
-          tabela.appendChild(tr);
-        });
+      const filtrado = visitantes.filter(v =>
+        (!texto || v['Nome *']?.toLowerCase().includes(texto)) &&
+        (!portaria || v.portaria === portaria)
+      );
+
+      const inicio = (pagina - 1) * porPagina;
+      const fim = inicio + porPagina;
+
+      filtrado.slice(inicio, fim).forEach((v, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${v['Nome *']}</td>
+          <td>${v['Placa *']}</td>
+          <td>${v.portaria}</td>
+          <td>${v.entrada}</td>
+          <td><button class="btn btn-sm btn-danger" onclick="remover(${visitantes.indexOf(v)})">Dar Saída</button></td>
+        `;
+        tabela.appendChild(tr);
+      });
+
+      const totalPaginas = Math.max(1, Math.ceil(filtrado.length / porPagina));
+      paginaAtualSpan.textContent = `Página ${pagina} de ${totalPaginas}`;
+      btnPrev.disabled = pagina === 1;
+      btnNext.disabled = pagina === totalPaginas;
     }
 
     function remover(i) {
@@ -170,6 +203,14 @@
 
     filtroNome.addEventListener('input', renderizarTabela);
     filtroPortaria.addEventListener('change', renderizarTabela);
+    btnPrev.addEventListener('click', () => {
+      if (pagina > 1) pagina--;
+      renderizarTabela();
+    });
+    btnNext.addEventListener('click', () => {
+      pagina++;
+      renderizarTabela();
+    });
   </script>
 </body>
 </html>
