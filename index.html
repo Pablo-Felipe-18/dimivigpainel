@@ -177,10 +177,11 @@
       tabela.innerHTML = '';
       const texto = filtroNome.value.toLowerCase();
       const portaria = filtroPortaria.value;
-      const filtrado = visitantes.filter(v =>
-        (!texto || v.nome?.toLowerCase().includes(texto)) &&
-        (!portaria || v.portaria === portaria)
-      );
+      const filtrado = visitantes.filter(v => {
+        const nomeCond = !texto || v.nome?.toLowerCase().includes(texto);
+        const portariaCond = !portaria || portaria === '' || v.portaria === portaria;
+        return nomeCond && portariaCond;
+      });
 
       const inicio = (pagina - 1) * porPagina;
       const fim = inicio + porPagina;
@@ -230,6 +231,8 @@
       pagina++;
       renderizarTabela();
     });
+
+    renderizarTabela();
   </script>
 </body>
 </html>
