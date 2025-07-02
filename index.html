@@ -180,7 +180,8 @@
       const filtrado = visitantes.filter(v => {
         const nomeCond = !texto || v.nome?.toLowerCase().includes(texto);
         const portariaCond = !portaria || portaria === '' || v.portaria === portaria;
-        return nomeCond && portariaCond;
+        const naoSaiu = !v.saida;
+        return nomeCond && portariaCond && naoSaiu;
       });
 
       const inicio = (pagina - 1) * porPagina;
@@ -205,7 +206,7 @@
     }
 
     function remover(i) {
-      visitantes.splice(i, 1);
+      visitantes[i].saida = new Date().toISOString();
       localStorage.setItem('visitantes', JSON.stringify(visitantes));
       renderizarTabela();
     }
