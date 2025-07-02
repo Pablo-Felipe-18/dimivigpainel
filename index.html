@@ -83,23 +83,23 @@
       <div class="col-12 col-md-6">
         <div class="form-section">
           <form id="formEntrada">
+            <input id="matriculaVigilante" class="form-control mb-4" placeholder="Nome Completo do Vigilante *" required>
             <div class="mb-3">
               <label for="portaria" class="form-label">Portaria *</label>
               <select class="form-select" id="portaria" required>
                 <option selected disabled>Selecione a Portaria</option>
                 <option value="A">Portaria A</option>
-                <option value="B">Portaria C</option>
-                <option value="C">Portaria D</option>
+                <option value="C">Portaria C</option>
+                <option value="D">Portaria D</option>
               </select>
             </div>
             <input id="nome" class="form-control mb-2" placeholder="Nome *" required>
             <input id="empresa" class="form-control mb-2" placeholder="Empresa *" required>
             <input id="setorDestino" class="form-control mb-2" placeholder="Setor de Destino *" required>
             <input id="autorizadoPor" class="form-control mb-2" placeholder="Autorizado por? *" required>
-            <input id="matriculaVigilante" class="form-control mb-2" placeholder="Nome Completo do Vigilante *" required>
             <input id="telefone" class="form-control mb-2" placeholder="Telefone *" required>
             <input id="placa" class="form-control mb-2" placeholder="Placa *" required>
-            <input id="modelo" class="form-control mb-3" placeholder="Veículo Modelo">
+            <input id="modelo" class="form-control mb-3" placeholder="Modelo do Veículo">
             <button type="submit" class="btn btn-primary w-100">Salvar</button>
           </form>
         </div>
@@ -113,8 +113,8 @@
             <select class="form-select" id="filtroPortaria">
               <option value="">Filtrar por Portaria</option>
               <option value="A">Portaria A</option>
-              <option value="B">Portaria C</option>
-              <option value="C">Portaria D</option>
+              <option value="C">Portaria C</option>
+              <option value="D">Portaria D</option>
             </select>
           </div>
           <div class="table-responsive">
@@ -136,6 +136,10 @@
             <span id="paginaAtual">Página 1</span>
             <button id="nextPage">&raquo;</button>
           </div>
+          <div class="mt-3">
+            <button class="btn btn-warning w-100" onclick="gerarRelatorio()">Gerar Relatório de Veículos</button>
+            <pre id="relatorio" class="mt-3" style="white-space: pre-wrap;"></pre>
+          </div>
         </div>
       </div>
     </div>
@@ -149,6 +153,7 @@
     const paginaAtualSpan = document.getElementById('paginaAtual');
     const btnPrev = document.getElementById('prevPage');
     const btnNext = document.getElementById('nextPage');
+    const relatorio = document.getElementById('relatorio');
 
     let visitantes = [];
     let pagina = 1;
@@ -200,6 +205,17 @@
     function remover(i) {
       visitantes.splice(i, 1);
       renderizarTabela();
+    }
+
+    function gerarRelatorio() {
+      const contagem = {};
+      visitantes.forEach(v => {
+        const placa = v.placa || 'DESCONHECIDO';
+        contagem[placa] = (contagem[placa] || 0) + 1;
+      });
+
+      const linhas = Object.entries(contagem).map(([placa, vezes]) => `Placa: ${placa} - Entradas: ${vezes}`);
+      relatorio.textContent = linhas.join('\n');
     }
 
     filtroNome.addEventListener('input', renderizarTabela);
