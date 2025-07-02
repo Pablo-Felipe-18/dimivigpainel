@@ -211,13 +211,28 @@
     }
 
     function gerarRelatorio() {
-      const contagem = {};
+      const contagemTotal = {};
+      const contagem30Dias = {};
+      const agora = new Date();
+      const trintaDiasAtras = new Date(agora.getTime() - (30 * 24 * 60 * 60 * 1000));
+
       visitantes.forEach(v => {
         const placa = v.placa || 'DESCONHECIDO';
-        contagem[placa] = (contagem[placa] || 0) + 1;
+        const dataEntrada = new Date(v.entrada);
+
+        contagemTotal[placa] = (contagemTotal[placa] || 0) + 1;
+
+        if (dataEntrada >= trintaDiasAtras) {
+          contagem30Dias[placa] = (contagem30Dias[placa] || 0) + 1;
+        }
       });
 
-      const linhas = Object.entries(contagem).map(([placa, vezes]) => `Placa: ${placa} - Entradas: ${vezes}`);
+      const linhas = Object.keys(contagemTotal).map(placa => {
+        const total = contagemTotal[placa];
+        const ultimos30 = contagem30Dias[placa] || 0;
+        return `Placa: ${placa} - Total de Entradas: ${total} | Últimos 30 dias: ${ultimos30}`;
+      });
+
       relatorio.textContent = linhas.join('\n');
     }
 
