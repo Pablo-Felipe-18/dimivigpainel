@@ -16,6 +16,7 @@
       background-color: #1a1a1a;
       border: 1px solid orange;
       color: #fff;
+      text-transform: uppercase;
     }
     .form-control::placeholder {
       color: #ccc;
@@ -156,7 +157,7 @@
     form.addEventListener('submit', e => {
       e.preventDefault();
       const dados = Array.from(form.querySelectorAll('input, select')).reduce((acc, input) => {
-        acc[input.id || input.placeholder] = input.value;
+        acc[input.id || input.placeholder] = input.value.toUpperCase();
         return acc;
       }, {});
       dados.entrada = new Date().toLocaleString();
