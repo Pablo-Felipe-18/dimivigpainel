@@ -189,13 +189,12 @@
 
     fetch('https://script.google.com/macros/s/AKfycbxUX595HLdI5ZOhJgegu6BWXEnTIkZ68R7yG9o-3RknHUEENMcmo85PxzVMO0uqqEhPsg/exec', {
       method: 'POST',
+       mode: 'no-cors',
       body: JSON.stringify(dados),
       headers: {
         'Content-Type': 'application/json'
       }
     })
-    .then(res => res.text())
-    .then(txt => console.log('✅ Webhook respondeu:', txt))
     .catch(err => console.error('❌ Erro no webhook:', err));
 
     form.reset();
