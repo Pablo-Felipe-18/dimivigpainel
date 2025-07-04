@@ -181,7 +181,16 @@
       acc[input.id] = input.value.toUpperCase();
       return acc;
     }, {});
-    dados.entrada = new Date().toISOString();
+    function formatarDataAgora() {
+  const data = new Date();
+  return data.toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour12: false
+  });
+}
+
+dados.entrada = formatarDataAgora();
+
     visitantes.push(dados);
     localStorage.setItem('visitantes', JSON.stringify(visitantes));
 
@@ -206,7 +215,11 @@
     const modelo = visitantes[i].modelo || 'veículo';
     const confirmado = confirm(`Tem certeza que quer dar saída no '${modelo}'?`);
     if (confirmado) {
-      visitantes[i].saida = new Date().toISOString();
+      visitantes[i].saida = new Date().toLocaleString("pt-BR", {
+  timeZone: "America/Sao_Paulo",
+  hour12: false
+});
+
       localStorage.setItem('visitantes', JSON.stringify(visitantes));
 
       console.log('🚗 Enviando SAÍDA para Webhook:', visitantes[i]);
