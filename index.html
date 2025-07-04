@@ -159,127 +159,154 @@
   </div>
 
   <script>
-    const form = document.getElementById('formEntrada');
-    const tabela = document.getElementById('tabelaVisitantes');
-    const filtroNome = document.getElementById('filtroNome');
-    const filtroPortaria = document.getElementById('filtroPortaria');
-    const paginaAtualSpan = document.getElementById('paginaAtual');
-    const btnPrev = document.getElementById('prevPage');
-    const btnNext = document.getElementById('nextPage');
-    const relatorio = document.getElementById('relatorio');
-    const relatorioContainer = document.getElementById('relatorioContainer');
-    const filtroRelatorio = document.getElementById('filtroRelatorio');
+  const form = document.getElementById('formEntrada');
+  const tabela = document.getElementById('tabelaVisitantes');
+  const filtroNome = document.getElementById('filtroNome');
+  const filtroPortaria = document.getElementById('filtroPortaria');
+  const paginaAtualSpan = document.getElementById('paginaAtual');
+  const btnPrev = document.getElementById('prevPage');
+  const btnNext = document.getElementById('nextPage');
+  const relatorio = document.getElementById('relatorio');
+  const relatorioContainer = document.getElementById('relatorioContainer');
+  const filtroRelatorio = document.getElementById('filtroRelatorio');
 
-    let visitantes = JSON.parse(localStorage.getItem('visitantes')) || [];
-    let pagina = 1;
-    const porPagina = 10;
+  let visitantes = JSON.parse(localStorage.getItem('visitantes')) || [];
+  let pagina = 1;
+  const porPagina = 10;
 
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      const dados = Array.from(form.querySelectorAll('input, select')).reduce((acc, input) => {
-        acc[input.id] = input.value.toUpperCase();
-        return acc;
-      }, {});
-      dados.entrada = new Date().toISOString();
-      visitantes.push(dados);
-      localStorage.setItem('visitantes', JSON.stringify(visitantes));
-      form.reset();
-      pagina = Math.ceil(visitantes.length / porPagina);
-      renderizarTabela();
-    });
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    console.log("🟠 Formulário foi enviado.");
+    const dados = Array.from(form.querySelectorAll('input, select')).reduce((acc, input) => {
+      acc[input.id] = input.value.toUpperCase();
+      return acc;
+    }, {});
+    dados.entrada = new Date().toISOString();
+    visitantes.push(dados);
+    localStorage.setItem('visitantes', JSON.stringify(visitantes));
 
-    function renderizarTabela() {
-      tabela.innerHTML = '';
-      const texto = filtroNome.value.toLowerCase();
-      const portaria = filtroPortaria.value;
-      const filtrado = visitantes.filter(v => {
-        const nomeCond = !texto || v.nome?.toLowerCase().includes(texto);
-        const portariaCond = !portaria || portaria === '' || v.portaria === portaria;
-        const naoSaiu = !v.saida;
-        return nomeCond && portariaCond && naoSaiu;
-      });
+    console.log('🔄 Enviando ENTRADA para Webhook:', dados);
 
-      const inicio = (pagina - 1) * porPagina;
-      const fim = inicio + porPagina;
-
-      filtrado.slice(inicio, fim).forEach((v, i) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${v.nome || ''}</td>
-          <td>${v.placa || ''}</td>
-          <td>${v.portaria || ''}</td>
-          <td>${v.entrada || ''}</td>
-          <td><button class="btn btn-sm btn-danger" onclick="confirmarSaida(${visitantes.indexOf(v)})">Dar Saída</button></td>
-        `;
-        tabela.appendChild(tr);
-      });
-
-      const totalPaginas = Math.max(1, Math.ceil(filtrado.length / porPagina));
-      paginaAtualSpan.textContent = `Página ${pagina} de ${totalPaginas}`;
-      btnPrev.disabled = pagina === 1;
-      btnNext.disabled = pagina === totalPaginas;
-    }
-
-    function confirmarSaida(i) {
-      const modelo = visitantes[i].modelo || 'veículo';
-      const confirmado = confirm(`Tem certeza que quer dar saída no '${modelo}'?`);
-      if (confirmado) {
-        visitantes[i].saida = new Date().toISOString();
-        localStorage.setItem('visitantes', JSON.stringify(visitantes));
-        renderizarTabela();
+    fetch('https://webhook.site/a6aa5ead-7183-451b-bc61-d398a8a2f34e', {
+      method: 'POST',
+      body: JSON.stringify(dados),
+      headers: {
+        'Content-Type': 'application/json'
       }
-    }
+    })
+    .then(res => res.text())
+    .then(txt => console.log('✅ Webhook respondeu:', txt))
+    .catch(err => console.error('❌ Erro no webhook:', err));
 
-    function gerarRelatorio() {
-      const contagemTotal = {};
-      const contagem30Dias = {};
-      const agora = new Date();
-      const trintaDiasAtras = new Date(agora.getTime() - (30 * 24 * 60 * 60 * 1000));
-
-      visitantes.forEach(v => {
-        const placa = v.placa || 'DESCONHECIDO';
-        const dataEntrada = new Date(v.entrada);
-
-        contagemTotal[placa] = (contagemTotal[placa] || 0) + 1;
-
-        if (!isNaN(dataEntrada.getTime()) && dataEntrada >= trintaDiasAtras) {
-          contagem30Dias[placa] = (contagem30Dias[placa] || 0) + 1;
-        }
-      });
-
-      const linhas = Object.keys(contagemTotal).map(placa => {
-        const total = contagemTotal[placa];
-        const ultimos30 = contagem30Dias[placa] || 0;
-        return `Placa: ${placa} - Total de Entradas: ${total} | Últimos 30 dias: ${ultimos30}`;
-      });
-
-      relatorioContainer.style.display = 'block';
-      relatorio.textContent = linhas.join('\n');
-    }
-
-    function fecharRelatorio() {
-      relatorioContainer.style.display = 'none';
-    }
-
-    filtroRelatorio.addEventListener('input', () => {
-      const termo = filtroRelatorio.value.toUpperCase();
-      const linhas = relatorio.textContent.split('\n');
-      const filtradas = linhas.filter(l => l.includes(termo));
-      relatorio.textContent = filtradas.join('\n');
-    });
-
-    filtroNome.addEventListener('input', renderizarTabela);
-    filtroPortaria.addEventListener('change', renderizarTabela);
-    btnPrev.addEventListener('click', () => {
-      if (pagina > 1) pagina--;
-      renderizarTabela();
-    });
-    btnNext.addEventListener('click', () => {
-      pagina++;
-      renderizarTabela();
-    });
-
+    form.reset();
+    pagina = Math.ceil(visitantes.length / porPagina);
     renderizarTabela();
-  </script>
-</body>
-</html>
+  });
+
+  function confirmarSaida(i) {
+    const modelo = visitantes[i].modelo || 'veículo';
+    const confirmado = confirm(`Tem certeza que quer dar saída no '${modelo}'?`);
+    if (confirmado) {
+      visitantes[i].saida = new Date().toISOString();
+      localStorage.setItem('visitantes', JSON.stringify(visitantes));
+
+      console.log('🚗 Enviando SAÍDA para Webhook:', visitantes[i]);
+
+      fetch('https://webhook.site/a6aa5ead-7183-451b-bc61-d398a8a2f34e', {
+        method: 'POST',
+        body: JSON.stringify(visitantes[i]),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(r => r.text())
+      .then(txt => console.log('✅ Saída enviada:', txt))
+      .catch(err => console.error('❌ Erro na saída webhook:', err));
+
+      renderizarTabela();
+    }
+  }
+
+  function renderizarTabela() {
+    tabela.innerHTML = '';
+    const texto = filtroNome.value.toLowerCase();
+    const portaria = filtroPortaria.value;
+    const filtrado = visitantes.filter(v => {
+      const nomeCond = !texto || v.nome?.toLowerCase().includes(texto);
+      const portariaCond = !portaria || portaria === '' || v.portaria === portaria;
+      const naoSaiu = !v.saida;
+      return nomeCond && portariaCond && naoSaiu;
+    });
+
+    const inicio = (pagina - 1) * porPagina;
+    const fim = inicio + porPagina;
+
+    filtrado.slice(inicio, fim).forEach((v, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${v.nome || ''}</td>
+        <td>${v.placa || ''}</td>
+        <td>${v.portaria || ''}</td>
+        <td>${v.entrada || ''}</td>
+        <td><button class="btn btn-sm btn-danger" onclick="confirmarSaida(${visitantes.indexOf(v)})">Dar Saída</button></td>
+      `;
+      tabela.appendChild(tr);
+    });
+
+    const totalPaginas = Math.max(1, Math.ceil(filtrado.length / porPagina));
+    paginaAtualSpan.textContent = `Página ${pagina} de ${totalPaginas}`;
+    btnPrev.disabled = pagina === 1;
+    btnNext.disabled = pagina === totalPaginas;
+  }
+
+  function gerarRelatorio() {
+    const contagemTotal = {};
+    const contagem30Dias = {};
+    const agora = new Date();
+    const trintaDiasAtras = new Date(agora.getTime() - (30 * 24 * 60 * 60 * 1000));
+
+    visitantes.forEach(v => {
+      const placa = v.placa || 'DESCONHECIDO';
+      const dataEntrada = new Date(v.entrada);
+
+      contagemTotal[placa] = (contagemTotal[placa] || 0) + 1;
+
+      if (!isNaN(dataEntrada.getTime()) && dataEntrada >= trintaDiasAtras) {
+        contagem30Dias[placa] = (contagem30Dias[placa] || 0) + 1;
+      }
+    });
+
+    const linhas = Object.keys(contagemTotal).map(placa => {
+      const total = contagemTotal[placa];
+      const ultimos30 = contagem30Dias[placa] || 0;
+      return `Placa: ${placa} - Total de Entradas: ${total} | Últimos 30 dias: ${ultimos30}`;
+    });
+
+    relatorioContainer.style.display = 'block';
+    relatorio.textContent = linhas.join('\n');
+  }
+
+  function fecharRelatorio() {
+    relatorioContainer.style.display = 'none';
+  }
+
+  filtroRelatorio.addEventListener('input', () => {
+    const termo = filtroRelatorio.value.toUpperCase();
+    const linhas = relatorio.textContent.split('\n');
+    const filtradas = linhas.filter(l => l.includes(termo));
+    relatorio.textContent = filtradas.join('\n');
+  });
+
+  filtroNome.addEventListener('input', renderizarTabela);
+  filtroPortaria.addEventListener('change', renderizarTabela);
+  btnPrev.addEventListener('click', () => {
+    if (pagina > 1) pagina--;
+    renderizarTabela();
+  });
+  btnNext.addEventListener('click', () => {
+    pagina++;
+    renderizarTabela();
+  });
+
+  renderizarTabela();
+</script>
