@@ -359,12 +359,6 @@ form.addEventListener('submit', e => {
   renderizarTabela();
 
   // Chama a sincronização automática ao voltar a ficar online
-window.addEventListener('online', () => {
-  console.log("🌐 Voltou a ficar online! Tentando sincronizar...");
-  sincronizarFila();
-});
-
-
   // IndexedDB para fila offline
 let db;
 const request = indexedDB.open("offlineDB", 1);
@@ -376,6 +370,11 @@ request.onupgradeneeded = (event) => {
 
 request.onsuccess = (event) => {
   db = event.target.result;
+  window.addEventListener('online', () => {
+  console.log("🌐 Voltou a ficar online! Tentando sincronizar...");
+  sincronizarFila();
+});
+
   if (navigator.onLine) sincronizarFila();
 };
 
@@ -415,6 +414,8 @@ async function sincronizarFila() {
     const clearTx = db.transaction("fila", "readwrite");
     clearTx.objectStore("fila").clear();
     console.log('📤 Fila offline limpa após sincronização.');
+    alert("Todos os dados offline foram sincronizados com sucesso!");
+
   };
 
   getAll.onerror = (err) => {
