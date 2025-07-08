@@ -365,9 +365,9 @@ function salvarOffline(dado) {
 }
 
 // Detectar reconexão e sincronizar
-window.addEventListener('online', sincronizarFila);
-
 async function sincronizarFila() {
+  console.log("🔁 Iniciando sincronização da fila offline...");
+
   const tx = db.transaction("fila", "readonly");
   const store = tx.objectStore("fila");
   const getAll = store.getAll();
@@ -375,20 +375,36 @@ async function sincronizarFila() {
   getAll.onsuccess = async () => {
     const dadosPendentes = getAll.result;
 
-    for (let dado of dadosPendentes) {
-      await fetch('https://script.google.com/macros/s/AKfycbxUX595HLdI5ZOhJgegu6BWXEnTIkZ68R7yG9o-3RknHUEENMcmo85PxzVMO0uqqEhPsg/exec', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dado),
-      });
+    if (!dadosPendentes.length) {
+      console.log("✅ Nenhum dado pendente para sincronizar.");
+      return;
     }
 
-    // Limpa fila
+    console.log(`📦 Encontrados ${dadosPendentes.length} dados pendentes.`);
+
+    for (let dado of dadosPendentes) {
+      try {
+        await fetch('https://script.google.com/macros/s/AKfycbxUX595HLdI5ZOhJgegu6BWXEnTIkZ68R7yG9o-3RknHUEENMcmo85PxzVMO0uqqEhPsg/exec', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dado),
+        });
+        console.log("✅ Dado sincronizado:", dado);
+      } catch (err) {
+        console.error("❌ Erro ao sincronizar dado:", err);
+      }
+    }
+
     const clearTx = db.transaction("fila", "readwrite");
     clearTx.objectStore("fila").clear();
-    console.log('📤 Dados offline sincronizados com a planilha!');
+    console.log('📤 Fila offline limpa após sincronização.');
+  };
+
+  getAll.onerror = (err) => {
+    console.error("❌ Erro ao ler dados da fila:", err);
   };
 }
+
 
 </script>
 
