@@ -212,15 +212,19 @@ dados.entrada = formatarDataAgora();
 
     console.log('🔄 Enviando ENTRADA para Webhook:', dados);
 
-    fetch('https://script.google.com/macros/s/AKfycbxUX595HLdI5ZOhJgegu6BWXEnTIkZ68R7yG9o-3RknHUEENMcmo85PxzVMO0uqqEhPsg/exec', {
-      method: 'POST',
-       mode: 'no-cors',
-      body: JSON.stringify(dados),
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
-    .catch(err => console.error('❌ Erro no webhook:', err));
+    if (navigator.onLine) {
+  fetch('https://script.google.com/macros/s/AKfycbxUX595HLdI5ZOhJgegu6BWXEnTIkZ68R7yG9o-3RknHUEENMcmo85PxzVMO0uqqEhPsg/exec', {
+    method: 'POST',
+    mode: 'no-cors',
+    body: JSON.stringify(dados),
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }).catch(err => console.error('❌ Erro no webhook:', err));
+} else {
+  salvarOffline(dados);
+}
+
 
     form.reset();
     pagina = Math.ceil(visitantes.length / porPagina);
@@ -240,17 +244,22 @@ dados.entrada = formatarDataAgora();
 
       console.log('🚗 Enviando SAÍDA para Webhook:', visitantes[i]);
 
-      fetch('https://script.google.com/macros/s/AKfycbxUX595HLdI5ZOhJgegu6BWXEnTIkZ68R7yG9o-3RknHUEENMcmo85PxzVMO0uqqEhPsg/exec', {
-        method: 'POST',
-         mode: 'no-cors',
-        body: JSON.stringify(visitantes[i]),
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-      .then(r => r.text())
-      .then(txt => console.log('✅ Saída enviada:', txt))
-      .catch(err => console.error('❌ Erro na saída webhook:', err));
+      if (navigator.onLine) {
+  fetch('https://script.google.com/macros/s/AKfycbxUX595HLdI5ZOhJgegu6BWXEnTIkZ68R7yG9o-3RknHUEENMcmo85PxzVMO0uqqEhPsg/exec', {
+    method: 'POST',
+    mode: 'no-cors',
+    body: JSON.stringify(visitantes[i]),
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(r => r.text())
+  .then(txt => console.log('✅ Saída enviada:', txt))
+  .catch(err => console.error('❌ Erro na saída webhook:', err));
+} else {
+  salvarOffline(visitantes[i]);
+}
+
 
       renderizarTabela();
     }
