@@ -373,12 +373,6 @@ request.onsuccess = (event) => {
 };
 
 // Salva offline
-function salvarOffline(dado) {
-  const tx = db.transaction("fila", "readwrite");
-  const store = tx.objectStore("fila");
-  store.add(dado);
-  console.log('📥 Dados salvos offline:', dado);
-}
 
 // Detectar reconexão e sincronizar
 async function sincronizarFila() {
