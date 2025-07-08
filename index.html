@@ -358,6 +358,13 @@ form.addEventListener('submit', e => {
 
   renderizarTabela();
 
+  // Chama a sincronização automática ao voltar a ficar online
+window.addEventListener('online', () => {
+  console.log("🌐 Voltou a ficar online! Tentando sincronizar...");
+  sincronizarFila();
+});
+
+
   // IndexedDB para fila offline
 let db;
 const request = indexedDB.open("offlineDB", 1);
