@@ -361,6 +361,7 @@ form.addEventListener('submit', e => {
   // Chama a sincronização automática ao voltar a ficar online
   // IndexedDB para fila offline
 let db;
+let dbReady = false;
 const request = indexedDB.open("offlineDB", 1);
 
 request.onupgradeneeded = (event) => {
@@ -370,13 +371,40 @@ request.onupgradeneeded = (event) => {
 
 request.onsuccess = (event) => {
   db = event.target.result;
-  window.addEventListener('online', () => {
-  console.log("🌐 Voltou a ficar online! Tentando sincronizar...");
-  sincronizarFila();
-});
-
+  dbReady = true;
+  console.log("✅ IndexedDB pronto");
   if (navigator.onLine) sincronizarFila();
+
+  window.addEventListener('online', () => {
+    console.log("🌐 Voltou a ficar online! Tentando sincronizar...");
+    sincronizarFila();
+  });
 };
+
+function salvarOffline(dado) {
+  if (!dbReady) {
+    console.warn("⚠️ IndexedDB ainda carregando. Tentando novamente em 1 segundo...");
+    setTimeout(() => salvarOffline(dado), 1000);
+    return;
+  }
+
+  try {
+    const tx = db.transaction("fila", "readwrite");
+    const store = tx.objectStore("fila");
+    const request = store.add(dado);
+
+    request.onsuccess = () => {
+      console.log("📥 Dados salvos offline com sucesso:", dado);
+    };
+
+    request.onerror = (event) => {
+      console.error("❌ Erro ao salvar offline:", event.target.error);
+    };
+  } catch (e) {
+    console.error("❌ Erro inesperado no salvarOffline():", e);
+  }
+}
+
 
 // Salva offline
 
