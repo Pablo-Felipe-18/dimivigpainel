@@ -2,13 +2,20 @@
   "name": "Sistema Dimivig",
   "short_name": "Dimivig",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#000000",
   "theme_color": "#ff6600",
   "icons": [
     {
       "src": "DIMIVIGLOGO.png",
       "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "DIMIVIGLOGO.png",
+      "sizes": "512x512",
       "type": "image/png"
     }
   ]

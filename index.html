@@ -211,21 +211,7 @@ dados.entrada = formatarDataAgora();
 
 
     console.log('🔄 Enviando ENTRADA para Webhook:', dados);
-
-    if (navigator.onLine) {
-  fetch('https://script.google.com/macros/s/AKfycbxUX595HLdI5ZOhJgegu6BWXEnTIkZ68R7yG9o-3RknHUEENMcmo85PxzVMO0uqqEhPsg/exec', {
-    method: 'POST',
-    mode: 'no-cors',
-    body: JSON.stringify(dados),
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  }).catch(err => console.error('❌ Erro no webhook:', err));
-} else {
-  salvarOffline(dados);
-}
-
-
+    
     form.reset();
     pagina = Math.ceil(visitantes.length / porPagina);
     renderizarTabela();
