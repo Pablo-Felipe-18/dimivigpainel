@@ -1,13 +1,13 @@
 {
-  "name": "Controle de Veículos",
-  "short_name": "Veículos",
-  "start_url": "./index.html",
+  "name": "Sistema Dimivig",
+  "short_name": "Dimivig",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "background_color": "#000000",
+  "theme_color": "#ff6600",
   "icons": [
     {
-      "src": "icon.png",
+      "src": "DIMIVIGLOGO.png",
       "sizes": "192x192",
       "type": "image/png"
     }

@@ -195,6 +195,21 @@ dados.entrada = formatarDataAgora();
     visitantes.push(dados);
     localStorage.setItem('visitantes', JSON.stringify(visitantes));
 
+    if (navigator.onLine) {
+      fetch('https://script.google.com/macros/s/AKfycbxUX595HLdI5ZOhJgegu6BWXEnTIkZ68R7yG9o-3RknHUEENMcmo85PxzVMO0uqqEhPsg/exec', {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(dados)
+      })
+      .catch(err => console.error('❌ Erro no envio online:', err));
+    } else {
+      salvarOffline(dados); // salva local se estiver offline
+    }
+
+
     console.log('🔄 Enviando ENTRADA para Webhook:', dados);
 
     fetch('https://script.google.com/macros/s/AKfycbxUX595HLdI5ZOhJgegu6BWXEnTIkZ68R7yG9o-3RknHUEENMcmo85PxzVMO0uqqEhPsg/exec', {
@@ -323,6 +338,55 @@ dados.entrada = formatarDataAgora();
   });
 
   renderizarTabela();
+
+  // IndexedDB para fila offline
+let db;
+const request = indexedDB.open("offlineDB", 1);
+
+request.onupgradeneeded = (event) => {
+  db = event.target.result;
+  db.createObjectStore("fila", { autoIncrement: true });
+};
+
+request.onsuccess = (event) => {
+  db = event.target.result;
+  if (navigator.onLine) sincronizarFila();
+};
+
+// Salva offline
+function salvarOffline(dado) {
+  const tx = db.transaction("fila", "readwrite");
+  const store = tx.objectStore("fila");
+  store.add(dado);
+  console.log('📥 Dados salvos offline:', dado);
+}
+
+// Detectar reconexão e sincronizar
+window.addEventListener('online', sincronizarFila);
+
+async function sincronizarFila() {
+  const tx = db.transaction("fila", "readonly");
+  const store = tx.objectStore("fila");
+  const getAll = store.getAll();
+
+  getAll.onsuccess = async () => {
+    const dadosPendentes = getAll.result;
+
+    for (let dado of dadosPendentes) {
+      await fetch('https://script.google.com/macros/s/AKfycbxUX595HLdI5ZOhJgegu6BWXEnTIkZ68R7yG9o-3RknHUEENMcmo85PxzVMO0uqqEhPsg/exec', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dado),
+      });
+    }
+
+    // Limpa fila
+    const clearTx = db.transaction("fila", "readwrite");
+    clearTx.objectStore("fila").clear();
+    console.log('📤 Dados offline sincronizados com a planilha!');
+  };
+}
+
 </script>
 
 <!-- ✅ Service Worker para funcionamento offline -->
