@@ -217,12 +217,28 @@ form.addEventListener('submit', e => {
 });
 
   function salvarOffline(dado) {
-  console.log("📦 Chamando salvarOffline com:", dado);
-  const tx = db.transaction("fila", "readwrite");
-  const store = tx.objectStore("fila");
-  store.add(dado);
-  console.log('📥 Dados salvos offline:', dado);
+  if (!db) {
+    console.error("❌ IndexedDB não está pronto ainda.");
+    return;
+  }
+
+  try {
+    const tx = db.transaction("fila", "readwrite");
+    const store = tx.objectStore("fila");
+    const request = store.add(dado);
+
+    request.onsuccess = () => {
+      console.log("📥 Dados salvos offline com sucesso:", dado);
+    };
+
+    request.onerror = (event) => {
+      console.error("❌ Erro ao salvar offline:", event.target.error);
+    };
+  } catch (e) {
+    console.error("❌ Erro inesperado no salvarOffline():", e);
+  }
 }
+
 
 
   function confirmarSaida(i) {
