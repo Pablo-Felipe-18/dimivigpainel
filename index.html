@@ -89,70 +89,37 @@
     <h3 class="text-center mb-4 text-orange">DIMIVIG</h3>
     <div class="row">
       <div class="col-12 col-md-6">
-        <div class="form-section">
-          <form id="formEntrada">
-            <input id="matriculaVigilante" class="form-control mb-4" placeholder="Nome Completo do Vigilante *" required>
-            <div class="mb-3">
-              <label for="portaria" class="form-label">Portaria *</label>
-              <select class="form-select" id="portaria" required>
-                <option selected disabled>Selecione a Portaria</option>
-                <option value="A">Portaria A</option>
-                <option value="C">Portaria C</option>
-                <option value="D">Portaria D</option>
-              </select>
-            </div>
-            <input id="nome" class="form-control mb-2" placeholder="Nome *" required>
-            <input id="empresa" class="form-control mb-2" placeholder="Empresa *" required>
-            <input id="setorDestino" class="form-control mb-2" placeholder="Setor de Destino *" required>
-            <input id="autorizadoPor" class="form-control mb-2" placeholder="Autorizado por? *" required>
-            <input id="telefone" class="form-control mb-2" placeholder="Telefone *" required>
-            <input id="placa" class="form-control mb-2" placeholder="Placa *" required>
-            <input id="modelo" class="form-control mb-3" placeholder="Modelo do Veículo">
-            <button type="submit" class="btn btn-primary w-100">Salvar</button>
-          </form>
-        </div>
+        <form id="formEntrada">
+          <input id="nome" placeholder="Nome" required class="form-control mb-2">
+          <input id="placa" placeholder="Placa" required class="form-control mb-2">
+          <input id="empresa" placeholder="Empresa" required class="form-control mb-2">
+          <input id="telefone" placeholder="Telefone" required class="form-control mb-2">
+          <input id="modelo" placeholder="Modelo do Veículo" class="form-control mb-2">
+          <input id="setor" placeholder="Setor de Destino" class="form-control mb-2">
+          <input id="autorizadoPor" placeholder="Autorizado por?" class="form-control mb-2">
+          <button type="submit" class="btn btn-primary w-100">Salvar</button>
+        </form>
+        <ul id="listaDados" class="mt-4 text-white"></ul>
       </div>
       <div class="col-12 col-md-6">
         <div class="table-section">
-          <div class="mb-3">
-            <input type="text" class="form-control" id="filtroNome" placeholder="Pesquisar Visitante">
-          </div>
-          <div class="mb-3">
-            <select class="form-select" id="filtroPortaria">
-              <option value="">Filtrar por Portaria</option>
-              <option value="A">Portaria A</option>
-              <option value="C">Portaria C</option>
-              <option value="D">Portaria D</option>
-            </select>
-          </div>
-          <div class="table-responsive">
-            <table class="table table-bordered">
-              <thead>
-                <tr>
-                  <th>Visitante</th>
-                  <th>Placa</th>
-                  <th>Portaria</th>
-                  <th>Entrada</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody id="tabelaVisitantes"></tbody>
-            </table>
-          </div>
-          <div class="pagination">
-            <button id="prevPage">&laquo;</button>
-            <span id="paginaAtual">Página 1</span>
-            <button id="nextPage">&raquo;</button>
-          </div>
-          <div class="mt-3">
-            <button class="btn btn-warning w-100" onclick="gerarRelatorio()">Gerar Relatório de Veículos</button>
-          </div>
+          <h5>Visitantes Atuais</h5>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Placa</th>
+                <th>Entrada</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaVisitantes"></tbody>
+          </table>
+          <button class="btn btn-warning w-100 mt-2" onclick="gerarRelatorio()">Gerar Relatório</button>
           <div id="relatorioContainer">
-            <div class="d-flex justify-content-between align-items-center mt-3">
-              <input id="filtroRelatorio" type="text" class="form-control me-2" placeholder="Pesquisar Placa no Relatório">
-              <button class="btn btn-sm btn-danger" onclick="fecharRelatorio()">Fechar Relatório</button>
-            </div>
+            <input id="filtroRelatorio" class="form-control mt-2" placeholder="Filtrar por placa">
             <pre id="relatorio" class="mt-3" style="white-space: pre-wrap;"></pre>
+            <button class="btn btn-sm btn-danger mt-2" onclick="fecharRelatorio()">Fechar</button>
           </div>
         </div>
       </div>
@@ -160,263 +127,166 @@
   </div>
 
   <script>
-  const form = document.getElementById('formEntrada');
-  const tabela = document.getElementById('tabelaVisitantes');
-  const filtroNome = document.getElementById('filtroNome');
-  const filtroPortaria = document.getElementById('filtroPortaria');
-  const paginaAtualSpan = document.getElementById('paginaAtual');
-  const btnPrev = document.getElementById('prevPage');
-  const btnNext = document.getElementById('nextPage');
-  const relatorio = document.getElementById('relatorio');
-  const relatorioContainer = document.getElementById('relatorioContainer');
-  const filtroRelatorio = document.getElementById('filtroRelatorio');
+    let visitantes = JSON.parse(localStorage.getItem('visitantes')) || [];
+    let db;
+    const request = indexedDB.open('offlineDB', 1);
+    request.onupgradeneeded = event => {
+      db = event.target.result;
+      db.createObjectStore('fila', { autoIncrement: true });
+    };
+    request.onsuccess = event => {
+      db = event.target.result;
+      sincronizarOffline();
+      renderizarLista();
+      renderizarTabela();
+    };
 
-  let visitantes = JSON.parse(localStorage.getItem('visitantes')) || [];
-  let pagina = 1;
-  const porPagina = 10;
+    function salvarOffline(dado) {
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('fila', 'readwrite');
+        const store = tx.objectStore('fila');
+        const request = store.add(dado);
+        request.onsuccess = () => resolve(true);
+        request.onerror = () => reject(false);
+      });
+    }
 
-form.addEventListener('submit', e => {
-  e.preventDefault();
-  console.log("🟠 Formulário foi enviado.");
+    async function sincronizarOffline() {
+      if (!navigator.onLine) return;
+      const tx = db.transaction('fila', 'readwrite');
+      const store = tx.objectStore('fila');
+      const getAll = store.getAll();
+      getAll.onsuccess = async () => {
+        const dados = getAll.result;
+        for (const dado of dados) {
+          try {
+            await fetch('https://script.google.com/macros/s/AKfycbxUX595HLdI5ZOhJgegu6BWXEnTIkZ68R7yG9o-3RknHUEENMcmo85PxzVMO0uqqEhPsg/exec', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(dado)
+            });
+            visitantes.push(dado);
+          } catch (e) {
+            console.error('Erro ao sincronizar:', e);
+          }
+        }
+        store.clear();
+        localStorage.setItem('visitantes', JSON.stringify(visitantes));
+        renderizarTabela();
+        alert("✅ Todos os dados offline foram sincronizados!");
+      };
+    }
 
-  const dados = Array.from(form.querySelectorAll('input, select')).reduce((acc, input) => {
-    acc[input.id] = input.value.toUpperCase();
-    return acc;
-  }, {});
-
-  function formatarDataAgora() {
-    const data = new Date();
-    return data.toLocaleString("pt-BR", {
-      timeZone: "America/Sao_Paulo",
-      hour12: false
-    });
-  }
-
-  dados.entrada = formatarDataAgora();
-  visitantes.push(dados);
-  localStorage.setItem('visitantes', JSON.stringify(visitantes));
-
-  if (navigator.onLine) {
-    fetch('https://script.google.com/macros/s/AKfycbxUX595HLdI5ZOhJgegu6BWXEnTIkZ68R7yG9o-3RknHUEENMcmo85PxzVMO0uqqEhPsg/exec', {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(dados)
-    })
-    .catch(err => console.error('❌ Erro no envio online:', err));
-  } else {
-    salvarOffline(dados); // 👈 agora chama a função que está fora
-  }
-
-  console.log('🔄 Enviando ENTRADA para Webhook:', dados);
-  form.reset();
-  pagina = Math.ceil(visitantes.length / porPagina);
-  renderizarTabela();
-});
-
-
-
-  function confirmarSaida(i) {
-    const modelo = visitantes[i].modelo || 'veículo';
-    const confirmado = confirm(`Tem certeza que quer dar saída no '${modelo}'?`);
-    if (confirmado) {
-      visitantes[i].saida = new Date().toLocaleString("pt-BR", {
-  timeZone: "America/Sao_Paulo",
-  hour12: false
-});
-
-      localStorage.setItem('visitantes', JSON.stringify(visitantes));
-
-      console.log('🚗 Enviando SAÍDA para Webhook:', visitantes[i]);
+    document.getElementById('formEntrada').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const dado = {
+        nome: form.nome.value.toUpperCase(),
+        placa: form.placa.value.toUpperCase(),
+        empresa: form.empresa.value.toUpperCase(),
+        telefone: form.telefone.value,
+        modelo: form.modelo.value.toUpperCase(),
+        setor: form.setor.value.toUpperCase(),
+        autorizadoPor: form.autorizadoPor.value.toUpperCase(),
+        entrada: new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", hour12: false })
+      };
 
       if (navigator.onLine) {
-  fetch('https://script.google.com/macros/s/AKfycbxUX595HLdI5ZOhJgegu6BWXEnTIkZ68R7yG9o-3RknHUEENMcmo85PxzVMO0uqqEhPsg/exec', {
-    method: 'POST',
-    mode: 'no-cors',
-    body: JSON.stringify(visitantes[i]),
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  })
-  .then(r => r.text())
-  .then(txt => console.log('✅ Saída enviada:', txt))
-  .catch(err => console.error('❌ Erro na saída webhook:', err));
-} else {
-  salvarOffline(visitantes[i]);
-}
-
-
-      renderizarTabela();
-    }
-  }
-
-  function renderizarTabela() {
-    tabela.innerHTML = '';
-    const texto = filtroNome.value.toLowerCase();
-    const portaria = filtroPortaria.value;
-    const filtrado = visitantes.filter(v => {
-      const nomeCond = !texto || v.nome?.toLowerCase().includes(texto);
-      const portariaCond = !portaria || portaria === '' || v.portaria === portaria;
-      const naoSaiu = !v.saida;
-      return nomeCond && portariaCond && naoSaiu;
-    });
-
-    const inicio = (pagina - 1) * porPagina;
-    const fim = inicio + porPagina;
-
-    filtrado.slice(inicio, fim).forEach((v, i) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${v.nome || ''}</td>
-        <td>${v.placa || ''}</td>
-        <td>${v.portaria || ''}</td>
-        <td>${v.entrada || ''}</td>
-        <td><button class="btn btn-sm btn-danger" onclick="confirmarSaida(${visitantes.indexOf(v)})">Dar Saída</button></td>
-      `;
-      tabela.appendChild(tr);
-    });
-
-    const totalPaginas = Math.max(1, Math.ceil(filtrado.length / porPagina));
-    paginaAtualSpan.textContent = `Página ${pagina} de ${totalPaginas}`;
-    btnPrev.disabled = pagina === 1;
-    btnNext.disabled = pagina === totalPaginas;
-  }
-
-  function gerarRelatorio() {
-    const contagemTotal = {};
-    const contagem30Dias = {};
-    const agora = new Date();
-    const trintaDiasAtras = new Date(agora.getTime() - (30 * 24 * 60 * 60 * 1000));
-
-    visitantes.forEach(v => {
-      const placa = v.placa || 'DESCONHECIDO';
-      const dataEntrada = new Date(v.entrada);
-
-      contagemTotal[placa] = (contagemTotal[placa] || 0) + 1;
-
-      if (!isNaN(dataEntrada.getTime()) && dataEntrada >= trintaDiasAtras) {
-        contagem30Dias[placa] = (contagem30Dias[placa] || 0) + 1;
+        try {
+          await fetch('https://script.google.com/macros/s/AKfycbxUX595HLdI5ZOhJgegu6BWXEnTIkZ68R7yG9o-3RknHUEENMcmo85PxzVMO0uqqEhPsg/exec', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dado)
+          });
+          visitantes.push(dado);
+        } catch (e) {
+          await salvarOffline(dado);
+        }
+      } else {
+        await salvarOffline(dado);
       }
+
+      localStorage.setItem('visitantes', JSON.stringify(visitantes));
+      form.reset();
+      renderizarLista();
+      renderizarTabela();
     });
 
-    const linhas = Object.keys(contagemTotal).map(placa => {
-      const total = contagemTotal[placa];
-      const ultimos30 = contagem30Dias[placa] || 0;
-      return `Placa: ${placa} - Total de Entradas: ${total} | Últimos 30 dias: ${ultimos30}`;
-    });
-
-    relatorioContainer.style.display = 'block';
-    relatorio.textContent = linhas.join('\n');
-  }
-
-  function fecharRelatorio() {
-    relatorioContainer.style.display = 'none';
-  }
-
-  filtroRelatorio.addEventListener('input', () => {
-    const termo = filtroRelatorio.value.toUpperCase();
-    const linhas = relatorio.textContent.split('\n');
-    const filtradas = linhas.filter(l => l.includes(termo));
-    relatorio.textContent = filtradas.join('\n');
-  });
-
-  filtroNome.addEventListener('input', renderizarTabela);
-  filtroPortaria.addEventListener('change', renderizarTabela);
-  btnPrev.addEventListener('click', () => {
-    if (pagina > 1) pagina--;
-    renderizarTabela();
-  });
-  btnNext.addEventListener('click', () => {
-    pagina++;
-    renderizarTabela();
-  });
-
-  renderizarTabela();
-
-  // Chama a sincronização automática ao voltar a ficar online
-  // IndexedDB para fila offline
-let db;
-let dbReady = false;
-const request = indexedDB.open("offlineDB", 1);
-
-request.onupgradeneeded = (event) => {
-  db = event.target.result;
-  db.createObjectStore("fila", { autoIncrement: true });
-};
-
-request.onsuccess = (event) => {
-  db = event.target.result;
-  dbReady = true;
-  console.log("✅ IndexedDB pronto");
-  if (navigator.onLine) sincronizarFila();
-
-  window.addEventListener('online', () => {
-    console.log("🌐 Voltou a ficar online! Tentando sincronizar...");
-    sincronizarFila();
-  });
-};
-
-
-
-
-// Salva offline
-
-// Detectar reconexão e sincronizar
-async function sincronizarFila() {
-  console.log("🔁 Iniciando sincronização da fila offline...");
-
-  const tx = db.transaction("fila", "readonly");
-  const store = tx.objectStore("fila");
-  const getAll = store.getAll();
-
-  getAll.onsuccess = async () => {
-    const dadosPendentes = getAll.result;
-
-    if (!dadosPendentes.length) {
-      console.log("✅ Nenhum dado pendente para sincronizar.");
-      return;
+    function renderizarTabela() {
+      const tabela = document.getElementById('tabelaVisitantes');
+      tabela.innerHTML = '';
+      visitantes.filter(v => !v.saida).forEach((v, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${v.nome}</td>
+          <td>${v.placa}</td>
+          <td>${v.entrada}</td>
+          <td><button class="btn btn-sm btn-danger" onclick="confirmarSaida(${i})">Dar Saída</button></td>
+        `;
+        tabela.appendChild(tr);
+      });
     }
 
-    console.log(`📦 Encontrados ${dadosPendentes.length} dados pendentes.`);
+    function confirmarSaida(i) {
+      const modelo = visitantes[i].modelo || 'veículo';
+      const confirmado = confirm(`Tem certeza que quer dar saída no '${modelo}'?`);
+      if (!confirmado) return;
 
-    for (let dado of dadosPendentes) {
-      try {
-        await fetch('https://script.google.com/macros/s/AKfycbxUX595HLdI5ZOhJgegu6BWXEnTIkZ68R7yG9o-3RknHUEENMcmo85PxzVMO0uqqEhPsg/exec', {
+      visitantes[i].saida = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", hour12: false });
+      localStorage.setItem('visitantes', JSON.stringify(visitantes));
+      renderizarTabela();
+
+      if (navigator.onLine) {
+        fetch('https://script.google.com/macros/s/AKfycbxUX595HLdI5ZOhJgegu6BWXEnTIkZ68R7yG9o-3RknHUEENMcmo85PxzVMO0uqqEhPsg/exec', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(dado),
+          body: JSON.stringify(visitantes[i])
         });
-        console.log("✅ Dado sincronizado:", dado);
-      } catch (err) {
-        console.error("❌ Erro ao sincronizar dado:", err);
+      } else {
+        salvarOffline(visitantes[i]);
       }
     }
 
-    const clearTx = db.transaction("fila", "readwrite");
-    clearTx.objectStore("fila").clear();
-    console.log('📤 Fila offline limpa após sincronização.');
-    alert("Todos os dados offline foram sincronizados com sucesso!");
+    function renderizarLista() {
+      const lista = document.getElementById('listaDados');
+      if (!lista) return;
+      lista.innerHTML = '';
+      const tx = db.transaction('fila', 'readonly');
+      const store = tx.objectStore('fila');
+      const getAll = store.getAll();
+      getAll.onsuccess = () => {
+        getAll.result.forEach(d => {
+          const li = document.createElement('li');
+          li.textContent = `${d.nome} - ${d.placa}`;
+          lista.appendChild(li);
+        });
+      };
+    }
 
-  };
+    function gerarRelatorio() {
+      const contagem = {};
+      visitantes.forEach(v => {
+        if (!contagem[v.placa]) contagem[v.placa] = 0;
+        contagem[v.placa]++;
+      });
+      const relatorio = Object.entries(contagem).map(([placa, total]) => `Placa: ${placa} - Total: ${total}`).join('\n');
+      document.getElementById('relatorio').textContent = relatorio;
+      document.getElementById('relatorioContainer').style.display = 'block';
+    }
 
-  getAll.onerror = (err) => {
-    console.error("❌ Erro ao ler dados da fila:", err);
-  };
-}
+    function fecharRelatorio() {
+      document.getElementById('relatorioContainer').style.display = 'none';
+    }
 
+    window.addEventListener('online', sincronizarOffline);
+  </script>
 
-</script>
-
-<!-- ✅ Service Worker para funcionamento offline -->
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js')
-      .then(() => console.log('✅ Service Worker registrado!'))
-      .catch((err) => console.error('Erro ao registrar Service Worker:', err));
-  }
-</script>
-
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(() => console.log('✅ Service Worker registrado'))
+        .catch((err) => console.error('Erro ao registrar Service Worker:', err));
+    }
+  </script>
 </body>
 </html>
