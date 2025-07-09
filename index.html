@@ -216,29 +216,6 @@ form.addEventListener('submit', e => {
   renderizarTabela();
 });
 
-  function salvarOffline(dado) {
-  if (!db) {
-    console.error("❌ IndexedDB não está pronto ainda.");
-    return;
-  }
-
-  try {
-    const tx = db.transaction("fila", "readwrite");
-    const store = tx.objectStore("fila");
-    const request = store.add(dado);
-
-    request.onsuccess = () => {
-      console.log("📥 Dados salvos offline com sucesso:", dado);
-    };
-
-    request.onerror = (event) => {
-      console.error("❌ Erro ao salvar offline:", event.target.error);
-    };
-  } catch (e) {
-    console.error("❌ Erro inesperado no salvarOffline():", e);
-  }
-}
-
 
 
   function confirmarSaida(i) {
@@ -382,9 +359,11 @@ request.onsuccess = (event) => {
 };
 
 function salvarOffline(dado) {
-  if (!dbReady) {
-    console.warn("⚠️ IndexedDB ainda carregando. Tentando novamente em 1 segundo...");
-    setTimeout(() => salvarOffline(dado), 1000);
+  if (!db) {
+    console.warn("⏳ IndexedDB ainda não está pronto. Salvando depois...");
+
+    // Espera até o db estar pronto para salvar
+    setTimeout(() => salvarOffline(dado), 300);
     return;
   }
 
@@ -404,6 +383,7 @@ function salvarOffline(dado) {
     console.error("❌ Erro inesperado no salvarOffline():", e);
   }
 }
+
 
 
 // Salva offline
